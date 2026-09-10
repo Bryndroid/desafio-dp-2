@@ -1,20 +1,36 @@
 import { ThemedText } from "@/components/themed-text";
 import { Colors, Spacing } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
+import * as LocalAuthentication from "expo-local-authentication";
+import { router } from "expo-router";
 import {
-    Drawer,
-    DrawerContentScrollView,
-    DrawerItemList,
+  Drawer,
+  DrawerContentScrollView,
+  DrawerItemList,
 } from "expo-router/drawer";
-import { useColorScheme, View } from "react-native";
+import { TouchableOpacity, useColorScheme, View } from "react-native";
 
 
 export default function DrawerLayout() {
-  
+
+
+
   const colorScheme = useColorScheme();
   const theme = colorScheme === "light" ? "light" : "dark";
 
   const colors = Colors[theme];
+
+  const handleBiometric = async () => {
+    //Aqui tengo que tener ya datos biometricos guardados. Es util para saber si tiene esta funcionalidad.
+
+    const auth = await LocalAuthentication.authenticateAsync({
+      promptMessage: "Login con Biometria",
+      fallbackLabel: "Ha ocurrido un error"
+    })
+    if(auth.success){
+      router.push("/admin");
+    }
+  }
 
   return (
     <Drawer
@@ -26,29 +42,32 @@ export default function DrawerLayout() {
           }}
         >
           {/* Encabezado */}
-          <View
-            style={{
-              marginTop: 20,
-              padding: 20,
-              borderBottomWidth: 1,
-              borderBottomColor: colors.border,
-            }}
-          >
-            <ThemedText
-              type="subtitle"
-
+          <TouchableOpacity onPress={handleBiometric}>
+            <View
+              style={{
+                marginTop: 20,
+                padding: 20,
+                borderBottomWidth: 1,
+                borderBottomColor: colors.border,
+              }}
             >
-              Cine
               <ThemedText
                 type="subtitle"
-                style={{
-                  color: colors.primary,
-                }}
+
               >
-                Stream
+                Cine
+                <ThemedText
+                  type="subtitle"
+                  style={{
+                    color: colors.primary,
+                  }}
+                >
+                  Stream
+                </ThemedText>
               </ThemedText>
-            </ThemedText>
-          </View>
+            </View>
+          </TouchableOpacity>
+
 
           {/* Opciones */}
           <DrawerContentScrollView
@@ -56,13 +75,13 @@ export default function DrawerLayout() {
             contentContainerStyle={{
               paddingTop: Spacing.three,
               gap: Spacing.three,
-
+              height: "100%",
+              display: "flex",
+              flexDirection: "column"
             }}
           >
             <DrawerItemList {...props} />
-            <ThemedText type="small" style={{ marginTop: "150%", color: "#ffffff28" }}>
-              Proyecto realizado para DPS como Desafio #2
-            </ThemedText>
+            
           </DrawerContentScrollView>
         </View>
       )}
@@ -132,8 +151,8 @@ export default function DrawerLayout() {
           ),
         }}
       />
-      
-      
+
+
     </Drawer>
   );
 }

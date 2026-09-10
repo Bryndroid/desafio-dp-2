@@ -42,7 +42,7 @@ export default function GenerarReserva() {
     const finalizacionReserva = (nombreUsuario: string, reservaID: string) => {
         
         router.push({
-            pathname: "/reservas/[idReserva]",
+            pathname: "/(client)/reservas/[idReserva]",
             params:{
                 idReserva: reservaID
             }

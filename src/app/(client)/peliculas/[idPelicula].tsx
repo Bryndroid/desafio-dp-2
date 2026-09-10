@@ -85,8 +85,8 @@ export default function InfoPelicula() {
                     {/* Sección de Salas */}
                     <View style={styles.salasContainer}>
                         <Collapsible title='Salas Disponibles'>
-                            <TouchableOpacity onPress={() => setSala(sala)}>
-                                <ThemedText style={{ color: colors.text }}>
+                            <TouchableOpacity onPress={() => setSala(sala)} style={{backgroundColor:colors.backgroundSelected, borderWidth:3, borderColor: colors.primarySoft, padding: 20, borderRadius: 2000}}>
+                                <ThemedText style={{ color: colors.text, textAlign:"center", fontWeight:"bold" }}>
                                     {sala ? sala.nombre : "Sala 1"}
                                 </ThemedText>
                             </TouchableOpacity>
@@ -98,10 +98,10 @@ export default function InfoPelicula() {
                 <View style={[styles.footer, { borderTopColor: colors.border, backgroundColor: colors.background }]}>
                     <TouchableOpacity
                         activeOpacity={0.8}
-                        style={[styles.reserveButton, { backgroundColor: colors.primary }]}
+                        style={[styles.reserveButton, { backgroundColor: colors.primarySoft,borderBottomWidth: 5, borderRightWidth:5, borderLeftWidth:5, borderLeftColor: colors.border, borderRightColor: colors.border, borderBottomColor: colors.border  }]}
                         onPress={handleReserva}
                     >
-                        <ThemedText style={styles.reserveButtonText}>
+                        <ThemedText style={{...styles.reserveButtonText, color: colors.text}}>
                             Reservar {salaSelected !== undefined || salaSelected === null ? "- " + salaSelected?.nombre : ""}
                         </ThemedText>
                     </TouchableOpacity>

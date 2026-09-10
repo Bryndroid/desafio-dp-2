@@ -80,10 +80,10 @@ export default function HomeScreen() {
             </ThemedView>
 
             {/* Botón Inferior */}
-            <ThemedView style={[styles.viewHint, { backgroundColor: colors.primarySoft }]}>
+            <ThemedView style={[styles.viewHint, { backgroundColor: colors.primarySoft, borderBottomWidth: 5, borderRightWidth:5, borderLeftWidth:5, borderLeftColor: colors.border, borderRightColor: colors.border, borderBottomColor: colors.border }]}>
               <TouchableOpacity onPress={()=> router.push("/(client)/peliculas")}>
                 
-                <ThemedText style={{ color: colors.text, textAlign: "center", fontWeight: "bold" }}>
+                <ThemedText style={{ color: colors.text, textAlign: "center", fontWeight: "bold", }}>
                   Reserva YA
                 </ThemedText>
               </TouchableOpacity>
@@ -145,6 +145,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.three,
     backgroundColor: "transparent",
   },
+  
   viewHint: {
     padding: Spacing.three,
     borderRadius: 1000,

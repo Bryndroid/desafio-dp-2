@@ -35,7 +35,7 @@ export default function Reservas() {
       onPress={() => {
         // Aquí irá la lógica de navegación para ver la información completa
         router.push({
-            pathname:"/reservas/[idReserva]",
+            pathname:"/(client)/reservas/[idReserva]",
             params:{
                 idReserva: item.Id
             }

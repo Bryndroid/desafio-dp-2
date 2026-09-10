@@ -21,7 +21,7 @@ export const Colors = {
     // Marca
     primary: "#7C3AED",
     primarySoft: "#DDD6FE",
-    border: "#E9D5FF",
+    border: "#e3cdfa",
   },
 
   dark: {
