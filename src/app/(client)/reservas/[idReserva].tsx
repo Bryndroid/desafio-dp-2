@@ -5,6 +5,7 @@ import { ScrollView, StyleSheet, TouchableOpacity, useColorScheme, View } from "
 // Componentes y Tema
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { TicketQRCode } from "@/components/ticket-qr-code";
 import { Colors, Spacing } from "@/constants/theme";
 
 export default function MostrarInfoReserva() {
@@ -110,16 +111,14 @@ export default function MostrarInfoReserva() {
                         </View>
                     </View>
 
-                    {/* Código de barras simulado (Estético) */}
-                    <View style={styles.barcodeContainer}>
-                        <View style={[styles.barcodeLine, { backgroundColor: colors.textSecondary }]} />
-                        <View style={[styles.barcodeLine, { backgroundColor: colors.textSecondary, width: 4 }]} />
-                        <View style={[styles.barcodeLine, { backgroundColor: colors.textSecondary, width: 2 }]} />
-                        <View style={[styles.barcodeLine, { backgroundColor: colors.textSecondary, width: 6 }]} />
-                        <View style={[styles.barcodeLine, { backgroundColor: colors.textSecondary }]} />
-                        <View style={[styles.barcodeLine, { backgroundColor: colors.textSecondary, width: 5 }]} />
-                        <View style={[styles.barcodeLine, { backgroundColor: colors.textSecondary, width: 2 }]} />
-                        <View style={[styles.barcodeLine, { backgroundColor: colors.textSecondary, width: 4 }]} />
+                    {/* QR real: el personal lo escanea en la entrada para validar el boleto (Módulo 7) */}
+                    <View style={styles.qrContainer}>
+                        <TicketQRCode idReserva={reserva.Id} />
+                        {reserva.usado && (
+                            <ThemedText style={[styles.usadoBadge, { color: colors.textSecondary }]}>
+                                Este boleto ya fue validado en la entrada
+                            </ThemedText>
+                        )}
                     </View>
 
                 </View>
@@ -230,19 +229,15 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: "bold",
     },
-    barcodeContainer: {
-        flexDirection: "row",
-        justifyContent: "center",
+    qrContainer: {
         alignItems: "center",
-        height: 40,
-        gap: 4,
+        justifyContent: "center",
         marginTop: Spacing.five,
-        opacity: 0.6,
+        gap: Spacing.two,
     },
-    barcodeLine: {
-        height: "100%",
-        width: 3,
-        borderRadius: 1,
+    usadoBadge: {
+        fontSize: 12,
+        fontStyle: "italic",
     },
     totalCard: {
         width: "100%",

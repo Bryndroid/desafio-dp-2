@@ -8,5 +8,6 @@ export interface Reserva{
     horaInicio: string,
     horaFinalizacion: string,
     fechaCompra: string,
-    asientos: string[]
+    asientos: string[],
+    usado: boolean
 }

@@ -18,7 +18,7 @@ export default function Reservas() {
   // Extraemos la lista de reservas directamente desde el slice de Redux
   const reservas = useAppSelector((state) => state.reserva.list);
   const misReservas = reservas.filter(r => r.usuarioID === 106);
-  console.log(misReservas);
+  
   if(misReservas === undefined || misReservas.length === 0 ){
     return (
         <ThemedText>
@@ -40,7 +40,7 @@ export default function Reservas() {
                 idReserva: item.Id
             }
         })
-        console.log('Ver detalles de la reserva:', item.Id);
+        
       }}
     >
       <View style={styles.cardHeader}>

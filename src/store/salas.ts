@@ -47,21 +47,25 @@ const generarAsientosIniciales = (salaId: number): Asiento[] => {
 export const salas: Sala[] = [
   {
     id: 1,
+    peliculaId:"PEL-001",
     nombre: "Sala IMAX",
     asientos: generarAsientosIniciales(1),
   },
   {
     id: 2,
+    peliculaId:"PEL-002",
     nombre: "Sala Junior",
     asientos: generarAsientosIniciales(2),
   },
   {
     id: 3,
+    peliculaId:"PEL-003",
     nombre: "Sala VIP",
     asientos: generarAsientosIniciales(3),
   },
   {
     id: 4,
+    peliculaId:"PEL-004",
     nombre: "Sala MacroXE",
     asientos: generarAsientosIniciales(4),
   },

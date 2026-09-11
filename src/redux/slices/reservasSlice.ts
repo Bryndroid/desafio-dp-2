@@ -35,13 +35,35 @@ const reservaSlice = createSlice({
                 return reserva.Id !== idReserva
             })
         },
+        marcarComoUsado: (state, action: PayloadAction<number>) => {
+            state.error = null;
+            const idValido = 67;
+            const reserva = state.list.find(r => r.Id === action.payload);
+
+            if (!reserva) {
+                state.error = "Error: este boleto no existe o no es válido.";
+                return;
+            }
+
+            if (reserva.usado) {
+                state.error = "Error: este boleto ya fue utilizado anteriormente.";
+                return;
+            }
+
+            reserva.usado = true;
+        },
+        clearError: (state) => {
+            state.error = null;
+        }
     }
 });
 
 export const {
     agregarReserva,
     modificarReserva,
-    eliminarReserva
+    eliminarReserva,
+    marcarComoUsado,
+    clearError
 } = reservaSlice.actions
 
 export default reservaSlice.reducer

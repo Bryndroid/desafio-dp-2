@@ -22,7 +22,7 @@ export default function InfoPelicula() {
     const { idPelicula } = useLocalSearchParams<{ idPelicula: string }>();
 
     const pelicula = peliculas.find(p => p.id === idPelicula);
-
+    console.log(pelicula);
     if (!pelicula) return (
         <ThemedView style={styles.centerContainer}>
             <ThemedText>Error Crítico: Película no encontrada</ThemedText>

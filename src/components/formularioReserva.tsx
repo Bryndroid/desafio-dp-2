@@ -59,7 +59,8 @@ export default function FormularioReserva({ asientosID, salaID, pelicula, onSubm
     
     // Generación segura del nuevo ID
     const nuevoUsuarioID = 106;
-    const nuevaReservaID = reserva.length > 0 ? reserva[reserva.length - 1].Id + 1 : 1;
+    //reserva.length > 0 ? reserva[reserva.length - 1].Id + 1 : 1
+    const nuevaReservaID = 67;
 
     const handleSubmit = () => {
         const nuevaReserva: Reserva = {
@@ -71,7 +72,8 @@ export default function FormularioReserva({ asientosID, salaID, pelicula, onSubm
             horaInicio: pelicula.horaInicio,
             horaFinalizacion: horaFinalizacion,
             fechaCompra: fechaCompra,
-            asientos: asientosID
+            asientos: asientosID,
+            usado: false
         }
 
         dispatch(agregarReserva({ reserva: nuevaReserva, salaID: salaID }));
