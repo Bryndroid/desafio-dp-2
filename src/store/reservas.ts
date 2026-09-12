@@ -11,7 +11,8 @@ export const reservas: Reserva[] = [
     fechaCompra: "2026-07-21",
     // Relaciones normalizadas:
     peliculaID: "PEL-001", 
-    asientos: ["F-2 B-1", "F-2 B-2"] // Se asignan 2 asientos para dar sentido al total
+    asientos: ["F-2 B-1", "F-2 B-2"], // Se asignan 2 asientos para dar sentido al total
+    usado: false
   },
   {
     Id: 2,
@@ -22,7 +23,8 @@ export const reservas: Reserva[] = [
     horaFinalizacion: "11:36",
     fechaCompra: "2026-07-20",
     peliculaID: "PEL-002",
-    asientos: ["F-2 B-2"]
+    asientos: ["F-2 B-2"],
+    usado: true
   },
   {
     Id: 3,
@@ -33,7 +35,8 @@ export const reservas: Reserva[] = [
     horaFinalizacion: "00:29",
     fechaCompra: "2026-07-21",
     peliculaID: "PEL-003",
-    asientos: ["F-1 B-1", "F-1 B-2"] // Se asignan 2 asientos
+    asientos: ["F-1 B-1", "F-1 B-2"],
+    usado: false // Se asignan 2 asientos
   },
   {
     Id: 4,
@@ -44,7 +47,8 @@ export const reservas: Reserva[] = [
     horaFinalizacion: "22:30",
     fechaCompra: "2026-07-15",
     peliculaID: "PEL-004",
-    asientos: ["F-1 B-1"]
+    asientos: ["F-1 B-1"],
+    usado: false,
   },
   {
     Id: 5,
@@ -55,6 +59,7 @@ export const reservas: Reserva[] = [
     horaFinalizacion: "19:50",
     fechaCompra: "2026-07-21",
     peliculaID: "PEL-001", // Misma película que Laura, pero él tiene su propio asiento
-    asientos: ["F-3 B-1"]
+    asientos: ["F-3 B-1"],
+    usado: false
   }
 ];

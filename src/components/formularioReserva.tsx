@@ -60,7 +60,7 @@ export default function FormularioReserva({ asientosID, salaID, pelicula, onSubm
     // Generación segura del nuevo ID
     const nuevoUsuarioID = 106;
     //reserva.length > 0 ? reserva[reserva.length - 1].Id + 1 : 1
-    const nuevaReservaID = 67;
+    const nuevaReservaID = reserva.length > 0 ? reserva[reserva.length - 1].Id + 1 : 1;
 
     const handleSubmit = () => {
         const nuevaReserva: Reserva = {

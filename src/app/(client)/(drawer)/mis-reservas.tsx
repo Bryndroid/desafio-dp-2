@@ -21,9 +21,11 @@ export default function Reservas() {
   
   if(misReservas === undefined || misReservas.length === 0 ){
     return (
-        <ThemedText>
-            No tienes ninguna reserva activa.
-        </ThemedText>
+        <ThemedView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+          <ThemedText style={{ color: colors.text, fontSize: 18, textAlign: 'center', marginTop: 20 }}>
+            No tienes reservas disponibles.
+          </ThemedText>
+        </ThemedView>
     )
   }
   const renderItem = ({ item }: { item: Reserva }) => (
