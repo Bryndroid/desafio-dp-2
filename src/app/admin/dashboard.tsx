@@ -1,4 +1,7 @@
-import { useAppSelector } from "@/redux/hook";
+import { useAppDispatch, useAppSelector } from "@/redux/hook";
+import { cargarPeliculas } from "@/redux/thunk/peliculas";
+import { cargarReservas } from "@/redux/thunk/reservas";
+import { useEffect } from "react";
 import { ScrollView, StyleSheet, View, useColorScheme } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -7,9 +10,14 @@ import { ThemedView } from "@/components/themed-view";
 import { BottomTabInset, Colors, MaxContentWidth, Spacing } from "@/constants/theme";
 
 export default function DashboardScreen() {
+  const dispatch = useAppDispatch();
   const peliculas = useAppSelector((state) => state.pelicula.list);
   const reservas = useAppSelector((state) => state.reserva.list);
   const salas = useAppSelector((state) => state.sala.list);
+  useEffect(() => {
+    void dispatch(cargarPeliculas());
+    void dispatch(cargarReservas());
+  }, [dispatch]);
 
   const colorScheme = useColorScheme();
   const theme = colorScheme === "light" ? "light" : "dark";
@@ -23,21 +31,21 @@ export default function DashboardScreen() {
   const totalBoletosVendidos = reservas.reduce((acc, r) => acc + r.asientos.length, 0);
   const ingresosGenerados = reservas.reduce((acc, r) => acc + r.total, 0);
 
-  const todosLosAsientos = salas.flatMap((s) => s.asientos ?? []);
-  const asientosOcupados = todosLosAsientos.filter((a) => a.ocupado).length;
-  const asientosDisponibles = todosLosAsientos.length - asientosOcupados;
+  const asientosOcupados = totalBoletosVendidos;
+  const capacidadTotal = peliculas.length * (salas[0]?.asientos?.length ?? 16);
+  const asientosDisponibles = Math.max(0, capacidadTotal - asientosOcupados);
 
-  const conteoPorPelicula = new Map<string, number>();
+  const conteoPorPelicula = new Map<number, number>();
   reservas.forEach((r) => {
-    conteoPorPelicula.set(r.peliculaID, (conteoPorPelicula.get(r.peliculaID) ?? 0) + 1);
+    conteoPorPelicula.set(r.peliculaApiId, (conteoPorPelicula.get(r.peliculaApiId) ?? 0) + r.asientos.length);
   });
   let peliculaMasReservada = "N/A";
   let maxReservas = 0;
-  conteoPorPelicula.forEach((cantidad, peliculaID) => {
+  conteoPorPelicula.forEach((cantidad, peliculaApiId) => {
     if (cantidad > maxReservas) {
       maxReservas = cantidad;
-      const pelicula = peliculas.find((p) => p.id === peliculaID);
-      peliculaMasReservada = pelicula ? pelicula.nombre : peliculaID;
+      const pelicula = peliculas.find((p) => p.apiId === peliculaApiId);
+      peliculaMasReservada = pelicula ? pelicula.nombre : String(peliculaApiId);
     }
   });
 

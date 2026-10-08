@@ -1,9 +1,10 @@
-import { Asiento } from "./Asiento";
 
-//Caada sala tendra 4 filas de asientos con 4 columndas
+import type { Asiento } from "./Asiento";
+
+// Cada sala tendrá 4 filas de asientos con 4 columnas.
 export interface Sala{
     id: number,
-    peliculaId: string,
     nombre:string,
-    asientos?: Asiento[]
+    peliculaId?: string,
+    asientos?: Asiento[],
 }

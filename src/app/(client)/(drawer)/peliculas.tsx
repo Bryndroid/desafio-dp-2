@@ -40,7 +40,8 @@ export default function MostrarCatalogo() {
                 p.nombre.toLowerCase().includes(texto) ||
                 p.genero.toLowerCase().includes(texto) ||
                 p.clasificacion.toLowerCase().includes(texto) ||
-                p.salaID.toString().includes(texto);
+                p.salaID.toString().includes(texto) ||
+                p.salaNombre.toLowerCase().includes(texto);
 
             // Filtro específico por botón de género
             const coincideGenero = filtroGenero ? p.genero === filtroGenero : true;

@@ -2,6 +2,11 @@ import store, { persistor } from "@/redux/store";
 import { Stack } from 'expo-router';
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
+import { useEffect } from "react";
+import { useAppDispatch } from "@/redux/hook";
+import { cargarPeliculas } from "@/redux/thunk/peliculas";
+import { cargarReservas } from "@/redux/thunk/reservas";
+import { cargarSalas } from "@/redux/thunk/salas";
 //Todos los archivos añadidos dentro de este directorio, de app, seran convertidos en paginas dentro de la app
 //Dentro de este layout define elementos UI compartidos como headers, tab bars, etc para que sea consistentes en cada ruta. No necesariamente es de rutas este archivo, aca podes dejar estilosxd.
 //Para el archivo index.tsx unicamente se accede a el por la /.
@@ -15,8 +20,19 @@ import { PersistGate } from "redux-persist/integration/react";
 
     // 1. Crea un componente hijo que se encargue de inicializar los datos
 function AppInitializer() {
- 
- 
+  const dispatch = useAppDispatch();
+  useEffect(() => {
+    void dispatch(cargarSalas()).unwrap().catch((error) => {
+      console.error("No se pudieron limpiar las salas antiguas.", error);
+    });
+
+    const cargarDatos = async () => {
+      await dispatch(cargarPeliculas());
+      await dispatch(cargarReservas());
+    };
+    void cargarDatos();
+  }, [dispatch]);
+
   return <Stack >
       <Stack.Screen name="(client)" options={{headerShown: false}}></Stack.Screen>
       <Stack.Screen name="admin" options={{title: "Vista admin Cargada"}}></Stack.Screen>

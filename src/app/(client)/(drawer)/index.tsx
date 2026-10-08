@@ -81,7 +81,7 @@ export default function HomeScreen() {
 
             {/* Botón Inferior */}
             <ThemedView style={[styles.viewHint, { backgroundColor: colors.primarySoft, borderBottomWidth: 5, borderRightWidth:5, borderLeftWidth:5, borderLeftColor: colors.border, borderRightColor: colors.border, borderBottomColor: colors.border }]}>
-              <TouchableOpacity onPress={()=> router.push("/(client)/peliculas")}>
+              <TouchableOpacity onPress={()=> router.push("/(client)/(drawer)/peliculas")}>
                 
                 <ThemedText style={{ color: colors.text, textAlign: "center", fontWeight: "bold", }}>
                   Reserva YA

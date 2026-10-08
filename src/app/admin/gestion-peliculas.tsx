@@ -1,7 +1,7 @@
 import { useAppDispatch, useAppSelector } from "@/redux/hook";
-import { cambiarEstadoPelicula, eliminarPelicula } from "@/redux/slices/peliculasSlice";
+import { cambiarEstadoPelicula, cargarPeliculas, eliminarPelicula } from "@/redux/thunk/peliculas";
 import { Pelicula } from "@/types/Peliculas";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, FlatList, StyleSheet, TouchableOpacity, useColorScheme, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -14,7 +14,9 @@ import { BottomTabInset, Colors, MaxContentWidth, Spacing } from "@/constants/th
 export default function GestionPeliculas() {
     const dispatch = useAppDispatch();
     const peliculas = useAppSelector((state) => state.pelicula.list);
-    const salas = useAppSelector((state) => state.sala.list);
+    const offline = useAppSelector((state) => state.pelicula.offline);
+    const guardando = useAppSelector((state) => state.pelicula.saving);
+    const error = useAppSelector((state) => state.pelicula.error);
 
     const colorScheme = useColorScheme();
     const theme = colorScheme === "light" ? "light" : "dark";
@@ -23,12 +25,25 @@ export default function GestionPeliculas() {
     const [formVisible, setFormVisible] = useState(false);
     const [peliculaEditar, setPeliculaEditar] = useState<Pelicula | null>(null);
 
+    useEffect(() => {
+        void dispatch(cargarPeliculas());
+    }, [dispatch]);
+
+    const cambiarEstado = async (pelicula: Pelicula) => {
+        try {
+            await dispatch(cambiarEstadoPelicula(pelicula)).unwrap();
+        } catch (cause) {
+            Alert.alert("No se pudo actualizar", typeof cause === "string" ? cause : "Intenta nuevamente.");
+        }
+    };
+
     const abrirCrear = () => {
         setPeliculaEditar(null);
         setFormVisible(true);
     };
 
     const abrirEditar = (pelicula: Pelicula) => {
+        console.log(pelicula);
         setPeliculaEditar(pelicula);
         setFormVisible(true);
     };
@@ -39,12 +54,19 @@ export default function GestionPeliculas() {
             `¿Seguro que deseas eliminar "${pelicula.nombre}"? Esta acción no se puede deshacer.`,
             [
                 { text: "Cancelar", style: "cancel" },
-                { text: "Eliminar", style: "destructive", onPress: () => dispatch(eliminarPelicula(pelicula.id)) },
+                {
+                    text: "Eliminar",
+                    style: "destructive",
+                    onPress: () => {
+                        void dispatch(eliminarPelicula(pelicula)).unwrap().catch((cause: unknown) => {
+                            Alert.alert("No se pudo eliminar", typeof cause === "string" ? cause : "Intenta nuevamente.");
+                        });
+                    },
+                },
             ]
         );
     };
 
-    const nombreSala = (salaID: number) => salas.find((s) => s.id === salaID)?.nombre ?? `Sala ${salaID}`;
 
     const renderItem = ({ item }: { item: Pelicula }) => (
         <View style={[styles.card, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
@@ -68,22 +90,23 @@ export default function GestionPeliculas() {
                 {item.id} · {item.genero} · {item.clasificacion} · {item.duracion} min
             </ThemedText>
             <ThemedText style={{ color: colors.textSecondary }}>
-                {nombreSala(item.salaID)} · {item.horaInicio} · ${item.precio.toFixed(2)}
+                {item.salaNombre} · {item.horaInicio} · ${item.precio.toFixed(2)}
             </ThemedText>
 
             <View style={styles.accionesRow}>
                 <TouchableOpacity
                     style={[styles.accionBtn, { borderColor: colors.border }]}
-                    onPress={() => dispatch(cambiarEstadoPelicula(item.id))}
+                    disabled={offline || guardando}
+                    onPress={() => void cambiarEstado(item)}
                 >
                     <ThemedText style={{ fontSize: 13 }}>
                         {item.estado ? "Marcar no disp." : "Marcar disponible"}
                     </ThemedText>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.accionBtn, { borderColor: colors.border }]} onPress={() => abrirEditar(item)}>
+                <TouchableOpacity style={[styles.accionBtn, { borderColor: colors.border }]} disabled={offline || guardando} onPress={() => abrirEditar(item)}>
                     <ThemedText style={{ fontSize: 13 }}>Editar</ThemedText>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.accionBtn, { borderColor: "#DC2626" }]} onPress={() => confirmarEliminar(item)}>
+                <TouchableOpacity style={[styles.accionBtn, { borderColor: "#DC2626" }]} disabled={offline || guardando} onPress={() => confirmarEliminar(item)}>
                     <ThemedText style={{ fontSize: 13, color: "#DC2626" }}>Eliminar</ThemedText>
                 </TouchableOpacity>
             </View>
@@ -95,10 +118,16 @@ export default function GestionPeliculas() {
             <SafeAreaView style={styles.safeArea}>
                 <View style={styles.headerRow}>
                     <ThemedText type="subtitle" style={{ fontSize: 24 }}>Películas</ThemedText>
-                    <TouchableOpacity style={[styles.btnAgregar, { backgroundColor: colors.primary }]} onPress={abrirCrear}>
+                    <TouchableOpacity style={[styles.btnAgregar, { backgroundColor: colors.primary, opacity: offline || guardando ? 0.5 : 1 }]} disabled={offline || guardando} onPress={abrirCrear}>
                         <ThemedText style={{ color: "#FFFFFF", fontWeight: "bold" }}>+ Agregar</ThemedText>
                     </TouchableOpacity>
                 </View>
+                {offline && (
+                    <ThemedText style={{ color: colors.textSecondary, marginBottom: Spacing.two }}>
+                        Sin conexión: puedes consultar el catálogo guardado, pero no modificarlo.
+                    </ThemedText>
+                )}
+                {error && <ThemedText style={{ color: "#DC2626", marginBottom: Spacing.two }}>{error}</ThemedText>}
 
                 <FlatList
                     data={peliculas}
@@ -114,7 +143,12 @@ export default function GestionPeliculas() {
                 />
             </SafeAreaView>
 
-            <FormularioPelicula visible={formVisible} peliculaEditar={peliculaEditar} onClose={() => setFormVisible(false)} />
+            <FormularioPelicula
+                key={`${formVisible}-${peliculaEditar?.apiId ?? "nueva"}`}
+                visible={formVisible}
+                peliculaEditar={peliculaEditar}
+                onClose={() => setFormVisible(false)}
+            />
         </ThemedView>
     );
 }

@@ -5,19 +5,19 @@ import QRCode from "react-native-qrcode-svg";
 // que la cámara pudiera leer por error.
 export const QR_PREFIX = "CINE-RESERVA-";
 
-export function construirCodigoQR(idReserva: number): string {
-  return `${QR_PREFIX}${idReserva}`;
+export function construirCodigoQR(codigo: string): string {
+  return `${QR_PREFIX}${codigo}`;
 }
 
 interface TicketQRCodeProps {
-  idReserva: number;
+  codigo: string;
   size?: number;
 }
 
-export function TicketQRCode({ idReserva, size = 140 }: TicketQRCodeProps) {
+export function TicketQRCode({ codigo, size = 140 }: TicketQRCodeProps) {
   return (
     <View style={{ alignItems: "center", justifyContent: "center", padding: 8 }}>
-      <QRCode value={construirCodigoQR(idReserva)} size={size} />
+      <QRCode value={construirCodigoQR(codigo)} size={size} />
     </View>
   );
 }

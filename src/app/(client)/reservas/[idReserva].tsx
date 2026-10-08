@@ -44,7 +44,7 @@ export default function MostrarInfoReserva() {
     }
 
     // Buscamos el nombre de la película para que sea más amigable al usuario
-    const pelicula = peliculas.find(p => p.id === reserva.peliculaID);
+    const pelicula = peliculas.find(p => p.apiId === reserva.peliculaApiId);
     const nombrePelicula = pelicula ? pelicula.nombre : "Película desconocida";
 
     return (
@@ -113,7 +113,7 @@ export default function MostrarInfoReserva() {
 
                     {/* QR real: el personal lo escanea en la entrada para validar el boleto (Módulo 7) */}
                     <View style={styles.qrContainer}>
-                        <TicketQRCode idReserva={reserva.Id} />
+                        <TicketQRCode codigo={reserva.codigo} />
                         {reserva.usado && (
                             <ThemedText style={[styles.usadoBadge, { color: colors.textSecondary }]}>
                                 Este boleto ya fue validado en la entrada

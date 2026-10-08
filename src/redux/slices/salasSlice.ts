@@ -1,14 +1,20 @@
-import { salas } from "@/store/salas";
-import { Asiento } from "@/types/Asiento";
-import { Sala } from "@/types/Sala";
+import { generarAsientosIniciales, salas } from "@/store/salas";
+import type { Asiento } from "@/types/Asiento";
+import type { Sala } from "@/types/Sala";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { agregarReserva } from "./reservasSlice";
+import { cargarSalas } from "../thunk/salas";
 interface SalasState {
     list: Sala[],
     error: string | null
 }
 
-const initialState: SalasState = { list: salas, error: null }
+const salasConAsientos = (lista: Sala[]): Sala[] =>
+    lista.map((sala) => ({
+        ...sala,
+        asientos: generarAsientosIniciales(sala.id),
+    }));
+
+const initialState: SalasState = { list: salasConAsientos(salas), error: null }
 const salasSlice = createSlice(
     {
         name: "sala",
@@ -66,47 +72,22 @@ const salasSlice = createSlice(
                 const id = state.list.length > 0
                     ? Math.max(...state.list.map((sala) => sala.id)) + 1
                     : 1;
-                const asientos: Asiento[] = [];
-
-                for (let fila = 1; fila <= 4; fila++) {
-                    for (let butaca = 1; butaca <= 4; butaca++) {
-                        const codigo = `F-${fila} B-${butaca}`;
-                        asientos.push({
-                            id: `SALA-${id}-${codigo}`,
-                            codigo,
-                            salaID: id,
-                            ocupado: false,
-                        });
-                    }
-                }
 
                 state.list.push({
                     id,
                     peliculaId: action.payload.peliculaId,
                     nombre: action.payload.nombre,
-                    asientos,
+                    asientos: generarAsientosIniciales(id),
                 });
             }
         },
         extraReducers: (builder) => {
-            builder.addCase(agregarReserva, (state, action) => {
-                const { usuarioID, asientos } = action.payload.reserva;
-                const sala = state.list.find(sala => sala.id === action.payload.salaID);
-
-                // 'asientos' trae los códigos (ej. ["A1", "A2"])
-                asientos.forEach(codigoAsiento => {
-                    // CAMBIO AQUÍ: Buscar por 'codigo' en lugar de 'id'
-                    const asientoSala = sala?.asientos?.find(asi => asi.codigo === codigoAsiento);
-
-                    if (asientoSala) {
-                        asientoSala.usuarioID = usuarioID;
-                        asientoSala.ocupado = true; // Opcional: asegurarte de que quede marcado como ocupado
-                    }
-                });
+            builder.addCase(cargarSalas.fulfilled, (state, action) => {
+                if (action.payload) {
+                    state.list = salasConAsientos(action.payload);
+                }
             });
-
-        }
-
+        },
     }
 )
 

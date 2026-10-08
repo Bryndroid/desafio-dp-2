@@ -1,121 +1,93 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { BottomTabInset, Colors, MaxContentWidth, Spacing } from '@/constants/theme';
-import { FlatList, Pressable, StyleSheet, useColorScheme, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-
-// Importamos los hooks de Redux y tu interfaz
-// (Asegúrate de que la ruta a tu RootState o hooks tipados coincida con tu proyecto)
-import { useAppSelector } from "@/redux/hook";
-import { Reserva } from '@/types/Reserva';
+import { BottomTabInset, Colors, MaxContentWidth, Spacing } from "@/constants/theme";
+import { USUARIO_GENERICO_ID } from "@/config";
+import { useAppDispatch, useAppSelector } from "@/redux/hook";
+import { cargarReservas } from "@/redux/thunk/reservas";
+import { Reserva } from "@/types/Reserva";
 import { router } from "expo-router";
+import { useEffect } from "react";
+import { FlatList, Pressable, StyleSheet, useColorScheme, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Reservas() {
+  const dispatch = useAppDispatch();
   const colorScheme = useColorScheme();
   const theme = colorScheme === "light" ? "light" : "dark";
   const colors = Colors[theme];
+  const reservas = useAppSelector((state) => state.reserva.list)
+    .filter((reservation) => reservation.usuarioID === USUARIO_GENERICO_ID);
+  const loading = useAppSelector((state) => state.reserva.loading);
+  const error = useAppSelector((state) => state.reserva.error);
+  const offline = useAppSelector((state) => state.reserva.offline);
 
-  // Extraemos la lista de reservas directamente desde el slice de Redux
-  const reservas = useAppSelector((state) => state.reserva.list);
-  const misReservas = reservas.filter(r => r.usuarioID === 106);
-  
-  if(misReservas === undefined || misReservas.length === 0 ){
-    return (
-        <ThemedView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
-          <ThemedText style={{ color: colors.text, fontSize: 18, textAlign: 'center', marginTop: 20 }}>
-            No tienes reservas disponibles.
-          </ThemedText>
-        </ThemedView>
-    )
-  }
+  useEffect(() => {
+    void dispatch(cargarReservas());
+  }, [dispatch]);
+
   const renderItem = ({ item }: { item: Reserva }) => (
-    <Pressable 
-      style={[
-        styles.card, 
-        { backgroundColor: colors.backgroundElement, borderColor: colors.border }
-      ]}
-      onPress={() => {
-        // Aquí irá la lógica de navegación para ver la información completa
-        router.push({
-            pathname:"/(client)/reservas/[idReserva]",
-            params:{
-                idReserva: item.Id
-            }
-        })
-        
-      }}
+    <Pressable
+      style={[styles.card, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}
+      onPress={() => router.push({ pathname: "/(client)/reservas/[idReserva]", params: { idReserva: item.Id } })}
     >
       <View style={styles.cardHeader}>
-        {/* Usamos el ID como nombre/título de la reserva */}
         <ThemedText style={styles.cardTitle}>Reserva #{item.Id}</ThemedText>
-        
-        {/* Renderizamos el Pago (Total) */}
         <ThemedText style={{ color: colors.primary, fontWeight: "600", fontSize: 16 }}>
           ${item.total.toFixed(2)}
         </ThemedText>
       </View>
-      
-      {/* Renderizamos Fecha y Hora de Inicio */}
-      <ThemedText style={{ color: colors.textSecondary }}>
-        Fecha de compra: {item.fechaCompra}
-      </ThemedText>
-      <ThemedText style={{ color: colors.textSecondary }}>
-        Hora de inicio: {item.horaInicio}
-      </ThemedText>
+      <ThemedText style={{ color: colors.textSecondary }}>Fecha de compra: {item.fechaCompra}</ThemedText>
+      <ThemedText style={{ color: colors.textSecondary }}>Función: {item.horaInicio} · {item.sala}</ThemedText>
     </Pressable>
   );
 
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        
-        
-        <FlatList
-          data={misReservas}
-          keyExtractor={(item) => item.Id.toString()}
-          renderItem={renderItem}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ 
-            gap: Spacing.three, 
-            paddingBottom: BottomTabInset + Spacing.three 
-          }}
-          style={{ width: '100%' }}
-        />
+        {offline && (
+          <ThemedText style={{ color: colors.textSecondary, marginBottom: Spacing.two }}>
+            Sin conexión: mostrando las reservas guardadas en este dispositivo.
+          </ThemedText>
+        )}
+        {!!error && <ThemedText style={{ color: colors.textSecondary, marginBottom: Spacing.two }}>{error}</ThemedText>}
+        {loading && reservas.length === 0 ? (
+          <ThemedText style={{ color: colors.textSecondary, textAlign: "center", marginTop: Spacing.five }}>
+            Cargando reservas...
+          </ThemedText>
+        ) : (
+          <FlatList
+            data={reservas}
+            keyExtractor={(item) => item.Id.toString()}
+            renderItem={renderItem}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ gap: Spacing.three, paddingBottom: BottomTabInset + Spacing.three }}
+            ListEmptyComponent={
+              <ThemedText style={{ color: colors.textSecondary, textAlign: "center", marginTop: Spacing.five }}>
+                No tienes reservas disponibles.
+              </ThemedText>
+            }
+          />
+        )}
       </SafeAreaView>
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   safeArea: {
     flex: 1,
     paddingHorizontal: Spacing.four,
-    alignSelf: 'center',
-    width: '100%',
+    alignSelf: "center",
+    width: "100%",
     maxWidth: MaxContentWidth,
   },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: Spacing.four,
-    marginTop: Spacing.two,
-  },
-  card: {
-    padding: Spacing.four,
-    borderRadius: Spacing.three,
-    borderWidth: 1,
-  },
+  card: { padding: Spacing.four, borderRadius: Spacing.three, borderWidth: 1 },
   cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: Spacing.two,
   },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
+  cardTitle: { fontSize: 18, fontWeight: "bold" },
 });

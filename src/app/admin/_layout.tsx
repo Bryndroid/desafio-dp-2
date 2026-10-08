@@ -84,6 +84,16 @@ export default function AdminLayout() {
                     ),
                 }}
             />
+            <Tabs.Screen
+                name="gestion-reservas"
+                options={{
+                    title: "Reservas",
+                    tabBarIcon: ({ color, size, focused }) => (
+                        <Ionicons name={focused ? "ticket" : "ticket-outline"} size={size} color={color} />
+                    ),
+                }}
+            />
+            <Tabs.Screen name="detalle-reserva/[id]" options={{ href: null }} />
         </Tabs>
     );
 }

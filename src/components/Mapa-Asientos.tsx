@@ -1,5 +1,4 @@
-import { useAppDispatch, useAppSelector } from "@/redux/hook";
-import { apartarAsiento, desapartar } from "@/redux/slices/salasSlice";
+import { Sala } from "@/types/Sala";
 import { Asiento } from "@/types/Asiento";
 import { useState } from "react";
 import { Alert, StyleSheet, TouchableOpacity, useColorScheme, View } from "react-native";
@@ -10,20 +9,19 @@ import { ThemedView } from "@/components/themed-view";
 import { Colors, Spacing } from "@/constants/theme";
 
 interface MapaAsientosProps {
-    salaId: number;
+    sala: Sala;
+    asientosOcupados: string[];
     onSubmit: (asientos: string[])=>void,
 }
 
-export default function MapaAsientos({ salaId, onSubmit }: MapaAsientosProps) {
-    const dispatch = useAppDispatch();
-    const salas = useAppSelector((state) => state.sala.list);
-    const salaActual = salas.find((s) => s.id === salaId);
-
+export default function MapaAsientos({ sala: salaActual, asientosOcupados, onSubmit }: MapaAsientosProps) {
     const colorScheme = useColorScheme();
     const theme = colorScheme === "light" ? "light" : "dark";
     const colors = Colors[theme];
 
-    if (!salaActual || !salaActual.asientos) {
+    const [seleccionados, setSeleccionados] = useState<string[]>([]);
+
+    if (!salaActual.asientos) {
         return (
             <ThemedView style={styles.centerContainer}>
                 <ThemedText>Cargando mapa de asientos...</ThemedText>
@@ -31,18 +29,8 @@ export default function MapaAsientos({ salaId, onSubmit }: MapaAsientosProps) {
         );
     }
 
-    const [seleccionados, setSeleccionados] = useState<string[]>(() => {
-        return salaActual.asientos
-            ?.filter((asiento) => asiento.ocupado && (asiento.usuarioID === undefined || asiento.usuarioID === null))
-            .map((asiento) => asiento.codigo) ?? [];
-    });
-
     const handleAsientoClick = (asiento: Asiento) => {
-        if (asiento.ocupado) {
-            if (asiento.usuarioID) return;
-            dispatch(desapartar(asiento.id));
-        }
-
+        if (asientosOcupados.includes(asiento.codigo)) return;
         setSeleccionados((prev) => {
             if (prev.includes(asiento.codigo)) {
                 return prev.filter((codigo) => codigo !== asiento.codigo);
@@ -59,15 +47,6 @@ export default function MapaAsientos({ salaId, onSubmit }: MapaAsientosProps) {
             return;
         }
 
-        seleccionados.forEach(asiento => {
-            dispatch(apartarAsiento({
-                id: `SALA-${salaId}-${asiento}`,
-                codigo: asiento,
-                ocupado: true,
-                salaID: salaId
-            }));
-        });
-        
         onSubmit(seleccionados);
     };
 
@@ -100,7 +79,7 @@ export default function MapaAsientos({ salaId, onSubmit }: MapaAsientosProps) {
             <View style={styles.gridAsientos}>
                 {salaActual.asientos.map((asiento) => {
                     const isSeleccionado = seleccionados.includes(asiento.codigo);
-                    const isOcupadoPorOtro = asiento.ocupado && asiento.usuarioID;
+                    const isOcupadoPorOtro = asientosOcupados.includes(asiento.codigo);
 
                     // Determinar estilos dinámicos del asiento
                     let backgroundColor: string = colors.background;

@@ -22,19 +22,17 @@ export default function InfoPelicula() {
     const { idPelicula } = useLocalSearchParams<{ idPelicula: string }>();
 
     const pelicula = peliculas.find(p => p.id === idPelicula);
-    console.log(pelicula);
     if (!pelicula) return (
         <ThemedView style={styles.centerContainer}>
             <ThemedText>Error Crítico: Película no encontrada</ThemedText>
         </ThemedView>
     );
 
-    const sala = salas.find(s => s.id === pelicula.salaID);
-    if (!sala) return (
-        <ThemedView style={styles.centerContainer}>
-            <ThemedText>Error Crítico: Sala no encontrada</ThemedText>
-        </ThemedView>
-    );
+    const sala = salas.find(s => s.id === pelicula.salaID) ?? {
+        id: pelicula.salaID,
+        peliculaId: pelicula.id,
+        nombre: pelicula.salaNombre,
+    };
 
     const handleReserva = () => {
         if (salaSelected === undefined || salaSelected === null) {
@@ -59,7 +57,7 @@ export default function InfoPelicula() {
                     {/* Contenedor de la Imagen y Título */}
                     <View style={styles.headerContainer}>
                         <Image
-                            source={require("@/assets/images/default-image.webp")}
+                            source={{ uri: pelicula.imgRef }}
                             style={styles.heroImage}
                             contentFit="cover"
                         />
@@ -87,7 +85,7 @@ export default function InfoPelicula() {
                         <Collapsible title='Salas Disponibles'>
                             <TouchableOpacity onPress={() => setSala(sala)} style={{backgroundColor:colors.backgroundSelected, borderWidth:3, borderColor: colors.primarySoft, padding: 20, borderRadius: 2000}}>
                                 <ThemedText style={{ color: colors.text, textAlign:"center", fontWeight:"bold" }}>
-                                    {sala ? sala.nombre : "Sala 1"}
+                                    {pelicula.salaNombre}
                                 </ThemedText>
                             </TouchableOpacity>
                         </Collapsible>
@@ -100,9 +98,10 @@ export default function InfoPelicula() {
                         activeOpacity={0.8}
                         style={[styles.reserveButton, { backgroundColor: colors.primarySoft,borderBottomWidth: 5, borderRightWidth:5, borderLeftWidth:5, borderLeftColor: colors.border, borderRightColor: colors.border, borderBottomColor: colors.border  }]}
                         onPress={handleReserva}
+                        disabled={!pelicula.estado}
                     >
                         <ThemedText style={{...styles.reserveButtonText, color: colors.text}}>
-                            Reservar {salaSelected !== undefined || salaSelected === null ? "- " + salaSelected?.nombre : ""}
+                            {pelicula.estado ? `Reservar - ${pelicula.salaNombre}` : "No disponible"}
                         </ThemedText>
                     </TouchableOpacity>
                 </View>

@@ -16,7 +16,7 @@ export function MovieCard({ pelicula, colors }: MovieCardProps) {
     <TouchableOpacity onPress={() => router.push(`/(client)/peliculas/${pelicula.id}`)}>
       <View style={[styles.card, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
         <Image
-          source={require("@/assets/images/default-image.webp")}
+          source={{ uri: pelicula.imgRef }}
           style={{ width: 210, height: 200, borderRadius: 10 }}
         />
         <ThemedText style={{ fontWeight: "bold", color: colors.text }} numberOfLines={1}>
@@ -24,7 +24,7 @@ export function MovieCard({ pelicula, colors }: MovieCardProps) {
         </ThemedText>
         <View>
           <ThemedText type="small" style={{ color: colors.primary, marginTop: 4 }}>
-            {pelicula.horaInicio} • Sala {pelicula.salaID}
+            {pelicula.horaInicio} • {pelicula.salaNombre}
           </ThemedText>
           <ThemedText type="small" style={{ color: colors.textSecondary }}>
             {pelicula.genero} | {pelicula.clasificacion}

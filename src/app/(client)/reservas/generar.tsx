@@ -1,163 +1,168 @@
-//Aqui se va a visualizar el panel de asientos para reservar. 
-//Por QueryParams tu vas a poder ver la info de la reserva.
-//Luego de aca mismo vas a poder darle confirmar para esos asientos, o vas a poder volver para seleccionar otros asientos. Tambien podras darle un boton para elegir OTRA funcion. Ese boton hara que te rediriga a index de peliculas y todo el progreso SE BORRARA.
 import FormularioReserva from "@/components/formularioReserva";
 import MapaAsientos from "@/components/Mapa-Asientos";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { BottomTabInset, Colors, MaxContentWidth, Spacing } from '@/constants/theme';
-import { useAppSelector } from "@/redux/hook";
+import { Colors, Spacing } from "@/constants/theme";
+import { useAppDispatch, useAppSelector } from "@/redux/hook";
+import { cargarReservas } from "@/redux/thunk/reservas";
+import { normalizarFechaFuncion } from "@/services/api";
+import { Asiento } from "@/types/Asiento";
 import { Pelicula } from "@/types/Peliculas";
 import { Sala } from "@/types/Sala";
 import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
-import { ScrollView, StyleSheet, TouchableOpacity, useColorScheme, View } from 'react-native';
+import { useEffect, useState } from "react";
+import { ScrollView, StyleSheet, TouchableOpacity, useColorScheme, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-export default function GenerarReserva() {
 
-    const colorScheme = useColorScheme();
-    const theme = colorScheme === "light" ? "light" : "dark";
-    const colors = Colors[theme];
-
-    const { salaId, peliculaId } = useLocalSearchParams();
-    const salas = useAppSelector((state) => state.sala.list);
-    const peliculas = useAppSelector((state) => state.pelicula.list);
-    const reservas = useAppSelector((state) => state.reserva.list);
-
-
-    const reservaPayload = {
-        pelicula: peliculas.find(p => p.id === peliculaId) as Pelicula,
-        sala: salas.find(s => s.id === Number(salaId)) as Sala,
-        userId: 22
-    }
-
-    const [paso, setPaso] = useState(1);
-    const [asientos, setAsientos] = useState<string[]>([]);
-
-    const generarReserva = (asientosApartados: string[]) => {
-        setAsientos(asientosApartados);
-        setPaso(2);
-    }
-
-    const finalizacionReserva = (nombreUsuario: string, reservaID: string) => {
-        
-        router.push({
-            pathname: "/(client)/reservas/[idReserva]",
-            params:{
-                idReserva: reservaID
-            }
-        });
-    }
-    return (
-        <ThemedView style={styles.container}>
-            <SafeAreaView>
-                {paso === 1 && (
-                    <>
-                        <View style={{ paddingLeft: 20, paddingTop: Spacing.five }}>
-                            <ThemedText type="subtitle" style={{ fontWeight: "bold", color: colors.primary }}>
-                                {reservaPayload.sala.nombre}
-                            </ThemedText>
-                            <ThemedText type="small">
-                                {reservaPayload.pelicula.nombre}
-                            </ThemedText>
-                        </View>
-                        <View style={{ padding: 20 }}>
-                            <MapaAsientos salaId={reservaPayload.sala.id} onSubmit={generarReserva} />
-                        </View>
-
-                    </>
-
-                )}
-                {paso === 2 && (
-                    <>
-                        <ScrollView
-                            contentContainerStyle={styles.scrollContent}
-                            showsVerticalScrollIndicator={false}
-                        >
-                            <FormularioReserva asientosID={asientos} salaID={reservaPayload.sala.id} pelicula={reservaPayload.pelicula} onSubmit={finalizacionReserva}>
-
-                            </FormularioReserva>
-                        </ScrollView>
-                        <View style={[styles.footer, { borderTopColor: colors.border, backgroundColor: colors.background }]}>
-                            <TouchableOpacity
-                                activeOpacity={0.8}
-                                style={[styles.reserveButton, { backgroundColor: colors.primary }]}
-                                onPress={() => setPaso(1)}
-                            >
-                                <ThemedText style={styles.reserveButtonText}>
-                                    Regresar
-                                </ThemedText>
-                            </TouchableOpacity>
-                        </View>
-
-                    </>
-                )}
-            </SafeAreaView>
-        </ThemedView>
-    )
+function crearSalaDeFuncion(pelicula: Pelicula, sala?: Sala): Sala {
+  const asientos: Asiento[] = sala?.asientos ?? Array.from({ length: 16 }, (_, index) => {
+    const fila = Math.floor(index / 4) + 1;
+    const butaca = (index % 4) + 1;
+    const codigo = `F-${fila} B-${butaca}`;
+    return { id: `SALA-${pelicula.salaID}-${codigo}`, codigo, salaID: pelicula.salaID, ocupado: false };
+  });
+  return {
+    id: pelicula.salaID,
+    peliculaId: pelicula.id,
+    nombre: pelicula.salaNombre,
+    asientos,
+  };
 }
-const styles = StyleSheet.create({
-    footer: {
-        paddingHorizontal: Spacing.three,
-        paddingTop: Spacing.three,
-        paddingBottom: BottomTabInset + Spacing.three,
-        borderTopWidth: 1,
-    },
-    scrollContent: {
-        paddingHorizontal: Spacing.three,
-        paddingTop: Spacing.two,
-        paddingBottom: Spacing.five,
-        gap: Spacing.four,
-    },
-    container: {
-        flex: 1,
-        justifyContent: 'center',
-        flexDirection: 'row',
-    },
-    viewHint: {
-        padding: Spacing.three,
-        borderRadius: 1000,
-        fontWeight: "bold",
 
-    },
-    safeArea: {
-        flex: 1,
-        paddingHorizontal: Spacing.four,
-        alignItems: 'center',
-        gap: Spacing.three,
-        paddingBottom: BottomTabInset + Spacing.three,
-        maxWidth: MaxContentWidth,
-    },
-    containerFilms: {
-        borderBottomWidth: 1,
-        padding: 20
-    },
-    title: {
-        textAlign: 'center',
-    },
-    stepContainer: {
-        gap: Spacing.three,
-        alignSelf: 'stretch',
-        paddingHorizontal: Spacing.three,
-        paddingVertical: Spacing.four,
-        borderRadius: Spacing.four,
-    },
-    reserveButton: {
-        paddingVertical: Spacing.three,
-        width: "100%",
-        borderRadius: 100,
-        alignItems: 'center',
-        justifyContent: 'center',
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-        marginTop: 20
-    },
-    reserveButtonText: {
-        color: "#FFFFFF", // El texto sobre el primary (morado) siempre debe ser blanco para contraste
-        fontSize: 18,
-        fontWeight: "bold",
-    }
+function fechaLocal() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+export default function GenerarReserva() {
+  const dispatch = useAppDispatch();
+  const colorScheme = useColorScheme();
+  const theme = colorScheme === "light" ? "light" : "dark";
+  const colors = Colors[theme];
+  const { salaId, peliculaId } = useLocalSearchParams<{ salaId: string; peliculaId: string }>();
+  const salas = useAppSelector((state) => state.sala.list);
+  const peliculas = useAppSelector((state) => state.pelicula.list);
+  const reservas = useAppSelector((state) => state.reserva.list);
+  const loadingReservas = useAppSelector((state) => state.reserva.loading);
+  const offline = useAppSelector((state) => state.reserva.offline);
+  const error = useAppSelector((state) => state.reserva.error);
+  const [reservasListas, setReservasListas] = useState(false);
+  const [paso, setPaso] = useState(1);
+  const [asientos, setAsientos] = useState<string[]>([]);
+
+  useEffect(() => {
+    void dispatch(cargarReservas()).finally(() => setReservasListas(true));
+  }, [dispatch]);
+
+  const pelicula = peliculas.find((item) => item.id === peliculaId);
+  if (!pelicula) {
+    return <ThemedView style={styles.center}><ThemedText>No se encontró la película solicitada.</ThemedText></ThemedView>;
+  }
+
+  const sala = crearSalaDeFuncion(pelicula, salas.find((item) => item.id === Number(salaId)));
+  const fechaFuncion = normalizarFechaFuncion(`${fechaLocal()} ${pelicula.horaInicio.padStart(5, "0")}:00`);
+  const asientosOcupados = reservas.filter((reservation) =>
+      {
+        console.log("------");
+        console.log(reservation.peliculaApiId + "--> reservaPeliculaId");
+        console.log(pelicula.apiId + "--> peliculaId");
+        console.log("------");
+        console.log(reservation.sala + "---> reservaSala");
+        console.log(pelicula.salaNombre + "---> peliculaSalaNombre");
+        console.log("------");
+        console.log(normalizarFechaFuncion(reservation.fechaFuncion) + "---> reservaFechaFuncion");
+        console.log(fechaFuncion + "----> fechaFuncion");
+        console.log("------");
+        return reservation.peliculaApiId === pelicula.apiId
+      && reservation.sala === pelicula.salaNombre
+      }
+    )
+    .flatMap((reservation) => reservation.asientos);
+    console.log(asientosOcupados);
+  const regresarAlMapa = () => {
+    setAsientos([]);
+    setPaso(1);
+  };
+
+  return (
+    <ThemedView style={styles.container}>
+      <SafeAreaView style={styles.safeArea}>
+        {paso === 1 ? (
+          <>
+            <View style={{ paddingLeft: 20, paddingTop: Spacing.five }}>
+              <ThemedText type="subtitle" style={{ fontWeight: "bold", color: colors.primary }}>
+                {pelicula.salaNombre}
+              </ThemedText>
+              <ThemedText type="small">{pelicula.nombre}</ThemedText>
+            </View>
+            {!reservasListas || loadingReservas ? (
+              <ThemedText style={{ padding: 20, color: colors.textSecondary }}>Consultando asientos ocupados...</ThemedText>
+            ) : offline ? (
+              <View style={{ padding: 20, gap: Spacing.two }}>
+                <ThemedText style={{ color: colors.textSecondary }}>
+                  Sin conexión: puedes consultar tus reservas guardadas, pero no reservar asientos.
+                </ThemedText>
+                <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }]} onPress={() => {
+                  setReservasListas(false);
+                  void dispatch(cargarReservas()).finally(() => setReservasListas(true));
+                }}>
+                  <ThemedText style={styles.buttonText}>Reintentar conexión</ThemedText>
+                </TouchableOpacity>
+              </View>
+            ) : error ? (
+              <View style={{ padding: 20, gap: Spacing.two }}>
+                <ThemedText style={{ color: colors.textSecondary }}>{error}</ThemedText>
+                <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }]} onPress={() => {
+                  setReservasListas(false);
+                  void dispatch(cargarReservas()).finally(() => setReservasListas(true));
+                }}>
+                  <ThemedText style={styles.buttonText}>Actualizar mapa</ThemedText>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={{ padding: 20 }}>
+                <MapaAsientos
+                  sala={sala}
+                  asientosOcupados={asientosOcupados}
+                  onSubmit={(selected) => {
+                    setAsientos(selected);
+                    setPaso(2);
+                  }}
+                />
+              </View>
+            )}
+          </>
+        ) : (
+          <>
+            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+              <FormularioReserva
+                asientosID={asientos}
+                pelicula={pelicula}
+                onSubmit={(id) => router.push({
+                  pathname: "/(client)/reservas/[idReserva]",
+                  params: { idReserva: String(id) },
+                })}
+                onConflict={regresarAlMapa}
+              />
+            </ScrollView>
+            <View style={[styles.footer, { borderTopColor: colors.border, backgroundColor: colors.background }]}>
+              <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }]} onPress={regresarAlMapa}>
+                <ThemedText style={styles.buttonText}>Regresar</ThemedText>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+      </SafeAreaView>
+    </ThemedView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
+  safeArea: { flex: 1 },
+  scrollContent: { paddingHorizontal: Spacing.three, paddingTop: Spacing.two, paddingBottom: Spacing.five },
+  footer: { paddingHorizontal: Spacing.three, paddingTop: Spacing.three, paddingBottom: Spacing.three, borderTopWidth: 1 },
+  button: { paddingVertical: Spacing.three, borderRadius: 100, alignItems: "center" },
+  buttonText: { color: "#FFFFFF", fontSize: 18, fontWeight: "bold" },
 });

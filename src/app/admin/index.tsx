@@ -1,7 +1,7 @@
 
 import { useAppDispatch, useAppSelector } from "@/redux/hook";
-import { clearError, marcarComoUsado } from "@/redux/slices/reservasSlice";
-import store from "@/redux/store";
+import { clearError } from "@/redux/slices/reservasSlice";
+import { cargarReservas, validarReserva } from "@/redux/thunk/reservas";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useState } from "react";
 import {
@@ -35,6 +35,8 @@ export default function EscanerScreen() {
   const peliculas = useAppSelector(
     (state) => state.pelicula.list
   );
+  const reservas = useAppSelector((state) => state.reserva.list);
+  const validando = useAppSelector((state) => state.reserva.validating);
 
   const [permiso, solicitarPermiso] = useCameraPermissions();
 
@@ -51,7 +53,7 @@ export default function EscanerScreen() {
     dispatch(clearError());
   };
 
-  const manejarEscaneo = ({ data }: { data: string }) => {
+  const manejarEscaneo = async ({ data }: { data: string }) => {
     if (bloqueado) return;
 
     setBloqueado(true);
@@ -68,52 +70,33 @@ export default function EscanerScreen() {
       return;
     }
 
-    const idReserva = Number(
-      data.replace(QR_PREFIX, "")
-    );
-
-    const reservaAntes = store.getState().reserva.list.find((r) => r.Id === idReserva);
-
-    if (!reservaAntes) {
+    const codigo = data.slice(QR_PREFIX.length);
+    const reservaAntes = reservas.find((reservation) => reservation.codigo === codigo);
+    try {
+      await dispatch(validarReserva(codigo)).unwrap();
+      const pelicula = peliculas.find((movie) => movie.id === reservaAntes?.peliculaID);
+      setResultado({
+        tipo: "exito",
+        mensaje: "¡Boleto válido!",
+        detalle: reservaAntes
+          ? `${pelicula?.nombre ?? "Película"} · ${reservaAntes.nombreUsuario} · Asientos: ${reservaAntes.asientos.join(", ")}`
+          : `Código ${codigo}`,
+      });
+    } catch (cause) {
+      const mensaje = typeof cause === "string" ? cause : "No se pudo validar el boleto.";
+      const normalizado = mensaje.toLowerCase();
+      if (normalizado.includes("ya fue utilizada")) {
+        await dispatch(cargarReservas());
+      }
       setResultado({
         tipo: "error",
-        mensaje:
-          "Boleto no reconocido. Verifica el código QR.",
+        mensaje: normalizado.includes("ya fue utilizada")
+          ? "Este boleto ya fue utilizado anteriormente."
+          : normalizado.includes("no encontrada")
+            ? "El boleto no existe."
+            : mensaje,
       });
-      return;
     }
-
-    if (reservaAntes.usado) {
-      setResultado({
-        tipo: "error",
-        mensaje:
-          "Este boleto ya fue utilizado anteriormente.",
-      });
-      return;
-    }
-
-    dispatch(marcarComoUsado(idReserva));
-
-    const error = store.getState().reserva.error;
-
-    if (error) {
-      setResultado({
-        tipo: "error",
-        mensaje: error,
-      });
-      return;
-    }
-
-    const pelicula = peliculas.find(
-      (p) => p.id === reservaAntes.peliculaID
-    );
-
-    setResultado({
-      tipo: "exito",
-      mensaje: "¡Boleto válido!",
-      detalle: `${pelicula?.nombre ?? "Película"} · ${reservaAntes.nombreUsuario
-        } · Asientos: ${reservaAntes.asientos.join(", ")}`,
-    });
   };
 
   /*
@@ -205,9 +188,7 @@ export default function EscanerScreen() {
               barcodeScannerSettings={{
                 barcodeTypes: ["qr"],
               }}
-              onBarcodeScanned={
-                bloqueado ? undefined : manejarEscaneo
-              }
+              onBarcodeScanned={bloqueado || validando ? undefined : (event) => void manejarEscaneo(event)}
             />
           </View>
 

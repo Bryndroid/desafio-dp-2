@@ -11,6 +11,7 @@ import salasSlice from "./slices/salasSlice";
 const persistConfig = {
   key: "root", // La llave principal que se usará en AsyncStorage
   storage: AsyncStorage,
+  blacklist: ["pelicula", "reserva"],
 };
 
 // 2. Agrupamos todos tus reducers

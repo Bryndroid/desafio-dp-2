@@ -1,9 +1,7 @@
 import { useAppDispatch, useAppSelector } from "@/redux/hook";
-import { agregarPelicula, modificarPelicula } from "@/redux/slices/peliculasSlice";
-import { crearSala } from "@/redux/slices/salasSlice";
-import store from "@/redux/store";
+import { actualizarPelicula, crearPelicula } from "@/redux/thunk/peliculas";
 import { Pelicula } from "@/types/Peliculas";
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useState } from "react";
 import {
     Alert,
     Modal,
@@ -37,87 +35,62 @@ function generarSiguienteId(lista: Pelicula[]): string {
     return `PEL-${siguiente.toString().padStart(3, "0")}`;
 }
 
-function generarSiguienteSalaId(lista: { id: number }[]): number {
-    return lista.length > 0 ? Math.max(...lista.map((sala) => sala.id)) + 1 : 1;
-}
-
 export default function FormularioPelicula({ visible, peliculaEditar, onClose }: FormularioPeliculaProps) {
     const dispatch = useAppDispatch();
     const peliculas = useAppSelector((state) => state.pelicula.list);
     const salas = useAppSelector((state) => state.sala.list);
-
+    console.log(salas);
     const colorScheme = useColorScheme();
     const theme = colorScheme === "light" ? "light" : "dark";
     const colors = Colors[theme];
     const esEdicion = !!peliculaEditar;
 
-    const [nombre, setNombre] = useState("");
-    const [genero, setGenero] = useState("");
-    const [duracion, setDuracion] = useState("");
-    const [clasificacion, setClasificacion] = useState<Pelicula["clasificacion"]>("A");
-    const [salaNombre, setSalaNombre] = useState<string | null>(null);
-    const [horaInicio, setHoraInicio] = useState("");
-    const [precio, setPrecio] = useState("");
+    const [nombre, setNombre] = useState(peliculaEditar?.nombre ?? "");
+    const [genero, setGenero] = useState(peliculaEditar?.genero ?? "");
+    const [duracion, setDuracion] = useState(peliculaEditar ? String(peliculaEditar.duracion) : "");
+    const [clasificacion, setClasificacion] = useState<Pelicula["clasificacion"]>(peliculaEditar?.clasificacion ?? "A");
+    const [salaNombre, setSalaNombre] = useState<string | null>(peliculaEditar?.salaNombre ??  null);
+    const [horaInicio, setHoraInicio] = useState(peliculaEditar?.horaInicio ?? "");
+    const [precio, setPrecio] = useState(peliculaEditar ? String(peliculaEditar.precio) : "");
+    const [imgRef, setImgRef] = useState(peliculaEditar?.imgRef ?? "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=600&h=900&q=80");
+    const [guardando, setGuardando] = useState(false);
 
-    // Cada vez que se abre el modal, precargamos (edición) o limpiamos (creación)
-    useEffect(() => {
-        if (!visible) return;
-
-        if (peliculaEditar) {
-            setNombre(peliculaEditar.nombre);
-            setGenero(peliculaEditar.genero);
-            setDuracion(String(peliculaEditar.duracion));
-            setClasificacion(peliculaEditar.clasificacion);
-            setSalaNombre(salas.find(sala => sala.id === peliculaEditar.salaID)?.nombre as string);
-            setHoraInicio(peliculaEditar.horaInicio);
-            setPrecio(String(peliculaEditar.precio));
-        } else {
-            setNombre("");
-            setGenero("");
-            setDuracion("");
-            setClasificacion("A");
-            setSalaNombre(salas[0]?.nombre ?? "");
-            setHoraInicio("");
-            setPrecio("");
-        }
-        console.log(salas);
-    }, [visible, peliculaEditar, salas]);
-
-    const handleGuardar = () => {
+    const handleGuardar = async () => {
         if (salaNombre === null) {
             Alert.alert("Error", "Selecciona una sala.");
             return;
         }
 
-        const salaID = esEdicion ? peliculaEditar!.salaID : generarSiguienteSalaId(salas);
+        if (!imgRef.trim()) {
+            Alert.alert("Error", "Ingresa la URL de la imagen.");
+            return;
+        }
+
+        const salaID = salas.find((sala) => sala.nombre === salaNombre)?.id ?? peliculaEditar?.salaID ?? 1;
         const pelicula: Pelicula = {
             id: esEdicion ? peliculaEditar!.id : generarSiguienteId(peliculas),
+            ...(peliculaEditar?.apiId ? { apiId: peliculaEditar.apiId } : {}),
             nombre: nombre.trim(),
             genero: genero.trim(),
             duracion: parseInt(duracion, 10) || 0,
             clasificacion,
             salaID,
+            salaNombre,
             horaInicio: horaInicio.trim(),
+            imgRef: imgRef.trim(),
             precio: parseFloat(precio) || 0,
             estado: esEdicion ? peliculaEditar!.estado : true,
         };
 
-        console.log(pelicula);
-
-        // El slice ya valida: nombre vacío, precio negativo, ID duplicado y horario repetido en la sala
-        dispatch(esEdicion ? modificarPelicula(pelicula) : agregarPelicula(pelicula));
-
-        const error = store.getState().pelicula.error;
-        if (error) {
-            Alert.alert("No se pudo guardar", error);
-            return;
+        setGuardando(true);
+        try {
+            await dispatch(esEdicion ? actualizarPelicula(pelicula) : crearPelicula(pelicula)).unwrap();
+            onClose();
+        } catch (error) {
+            Alert.alert("No se pudo guardar", typeof error === "string" ? error : "Verifica los datos e intenta nuevamente.");
+        } finally {
+            setGuardando(false);
         }
-
-        if (!esEdicion) {
-            dispatch(crearSala({ peliculaId: pelicula.id, nombre: salaNombre }));
-        }
-
-        onClose();
     };
 
     return (
@@ -212,6 +185,17 @@ export default function FormularioPelicula({ visible, peliculaEditar, onClose }:
                                 style={[styles.input, { color: colors.text, borderColor: colors.border }]}
                             />
                         </Campo>
+                        <Campo label="URL de la imagen" colors={colors}>
+                            <TextInput
+                                value={imgRef}
+                                onChangeText={setImgRef}
+                                autoCapitalize="none"
+                                keyboardType="url"
+                                placeholder="https://..."
+                                placeholderTextColor={colors.textSecondary}
+                                style={[styles.input, { color: colors.text, borderColor: colors.border }]}
+                            />
+                        </Campo>
                     </ScrollView>
 
                     <View style={styles.botonesRow}>
@@ -223,10 +207,11 @@ export default function FormularioPelicula({ visible, peliculaEditar, onClose }:
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={[styles.boton, { backgroundColor: colors.primary }]}
-                            onPress={handleGuardar}
+                            disabled={guardando}
+                            onPress={() => void handleGuardar()}
                         >
                             <ThemedText style={{ color: "#FFFFFF", fontWeight: "bold" }}>
-                                {esEdicion ? "Guardar cambios" : "Agregar"}
+                                {guardando ? "Guardando..." : esEdicion ? "Guardar cambios" : "Agregar"}
                             </ThemedText>
                         </TouchableOpacity>
                     </View>

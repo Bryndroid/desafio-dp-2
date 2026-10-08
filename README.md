@@ -1,5 +1,19 @@
 # Welcome to your Expo app 👋
 
+## API-CINE
+
+La aplicación consulta el catálogo y las reservas en la API desplegada en Railway.
+Antes de iniciar Expo, copia `.env.example` a `.env` y configura la URL base del
+servicio (sin `/peliculas` ni `/reservas`):
+
+```env
+EXPO_PUBLIC_API_URL=https://<tu-api-en-railway>
+```
+
+Películas y reservas se guardan en AsyncStorage como caché de consulta para modo
+offline. Las operaciones de escritura, incluida la compra de boletos, requieren
+conexión y siempre se envían a la API.
+
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
 ## Get started

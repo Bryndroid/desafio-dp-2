@@ -1,9 +1,8 @@
 import { useAppDispatch, useAppSelector } from "@/redux/hook";
-import { agregarReserva } from "@/redux/slices/reservasSlice";
+import { cargarReservas, guardarReserva } from "@/redux/thunk/reservas";
 import { useState } from "react";
 import { StyleSheet, TextInput, TouchableOpacity, useColorScheme, View } from "react-native";
 import { Pelicula } from "../types/Peliculas";
-import { Reserva } from "../types/Reserva";
 
 // Componentes y Tema
 import { ThemedText } from "@/components/themed-text";
@@ -12,9 +11,9 @@ import { Colors, Spacing } from "@/constants/theme";
 
 interface ReservaProp {
     asientosID: string[];
-    salaID: number; 
     pelicula: Pelicula;
-    onSubmit: (nombreUsuario: string, reservaID: string) => void;
+    onSubmit: (reservaID: number) => void;
+    onConflict: () => void;
 }
 
 const calcularHoraFin = (horaInicio: string, duracionMinutos: number) => {
@@ -24,12 +23,12 @@ const calcularHoraFin = (horaInicio: string, duracionMinutos: number) => {
     return `${fechaTemp.getHours().toString().padStart(2, '0')}:${fechaTemp.getMinutes().toString().padStart(2, '0')}`;
 };
 
-export default function FormularioReserva({ asientosID, salaID, pelicula, onSubmit }: ReservaProp) {
+export default function FormularioReserva({ asientosID, pelicula, onSubmit, onConflict }: ReservaProp) {
     const [nombreUsuario, setNombreUsuario] = useState("");
+    const [errorEnvio, setErrorEnvio] = useState<string | null>(null);
 
     const dispatch = useAppDispatch();
-    const reserva = useAppSelector((state) => state.reserva.list);
-    const salas = useAppSelector((state) => state.sala.list);
+    const guardando = useAppSelector((state) => state.reserva.saving);
 
     const colorScheme = useColorScheme();
     const theme = colorScheme === "light" ? "light" : "dark";
@@ -40,9 +39,7 @@ export default function FormularioReserva({ asientosID, salaID, pelicula, onSubm
     const successBgColor = theme === "light" ? "#D1FAE5" : "#064E3B";
 
     // Búsqueda de las entidades involucradas
-    const sala = salas.find(s => s.id === salaID);
-
-    if (!pelicula || !sala) {
+    if (!pelicula) {
         return (
             <View style={{ padding: Spacing.four }}>
                 <ThemedText style={{ color: colors.textSecondary }}>
@@ -55,29 +52,38 @@ export default function FormularioReserva({ asientosID, salaID, pelicula, onSubm
     // Cálculos de la reserva
     const totalPagar = asientosID.length * pelicula.precio;
     const horaFinalizacion = calcularHoraFin(pelicula.horaInicio, pelicula.duracion);
-    const fechaCompra = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD
-    
-    // Generación segura del nuevo ID
-    const nuevoUsuarioID = 106;
-    //reserva.length > 0 ? reserva[reserva.length - 1].Id + 1 : 1
-    const nuevaReservaID = reserva.length > 0 ? reserva[reserva.length - 1].Id + 1 : 1;
+    const now = new Date();
+    const fechaCompra = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
-    const handleSubmit = () => {
-        const nuevaReserva: Reserva = {
-            Id: nuevaReservaID,
-            usuarioID: nuevoUsuarioID,
-            nombreUsuario: nombreUsuario,
-            peliculaID: pelicula.id,
-            total: totalPagar,
-            horaInicio: pelicula.horaInicio,
-            horaFinalizacion: horaFinalizacion,
-            fechaCompra: fechaCompra,
-            asientos: asientosID,
-            usado: false
+    const handleSubmit = async () => {
+        if (!pelicula.apiId || !nombreUsuario.trim()) {
+            setErrorEnvio("Escribe el nombre del cliente para continuar.");
+            return;
         }
-
-        dispatch(agregarReserva({ reserva: nuevaReserva, salaID: salaID }));
-        onSubmit(nombreUsuario, nuevaReservaID.toString());
+        setErrorEnvio(null);
+        try {
+            const fechaFuncion = `${fechaCompra} ${pelicula.horaInicio.padStart(5, "0")}:00`;
+            const reserva = await dispatch(guardarReserva({
+                peliculaId: pelicula.apiId,
+                nombreCliente: nombreUsuario,
+                sala: pelicula.salaNombre,
+                fechaFuncion,
+                asientos: asientosID,
+            })).unwrap();
+            onSubmit(reserva.Id);
+        } catch (error) {
+            const failure = error && typeof error === "object" && "message" in error
+                ? error as { message: string; status?: number | null }
+                : null;
+            const message = typeof error === "string"
+                ? error
+                : failure?.message ?? "No se pudo guardar la reserva.";
+            setErrorEnvio(message);
+            if (failure?.status === 409 || message.toLowerCase().includes("asientos ocupados")) {
+                await dispatch(cargarReservas());
+                onConflict();
+            }
+        }
     };
 
     return (
@@ -104,7 +110,7 @@ export default function FormularioReserva({ asientosID, salaID, pelicula, onSubm
                 </View>
                 <View style={styles.detailItem}>
                     <ThemedText style={[styles.detailLabel, { color: colors.textSecondary }]}>Sala</ThemedText>
-                    <ThemedText style={styles.detailValue}>{sala.nombre}</ThemedText>
+                    <ThemedText style={styles.detailValue}>{pelicula.salaNombre}</ThemedText>
                 </View>
                 <View style={styles.detailItem}>
                     <ThemedText style={[styles.detailLabel, { color: colors.textSecondary }]}>Horario</ThemedText>
@@ -134,7 +140,7 @@ export default function FormularioReserva({ asientosID, salaID, pelicula, onSubm
             {/* Formulario (Inputs) */}
             <View style={styles.formContainer}>
                 <View style={styles.inputGroup}>
-                    <ThemedText style={styles.inputLabel}>Nombre del Cliente (Opcional)</ThemedText>
+                    <ThemedText style={styles.inputLabel}>Nombre del Cliente</ThemedText>
                     <TextInput 
                         style={[
                             styles.input, 
@@ -155,12 +161,18 @@ export default function FormularioReserva({ asientosID, salaID, pelicula, onSubm
                 <TouchableOpacity 
                     style={[styles.btnSubmit, { backgroundColor: successColor }]}
                     activeOpacity={0.8}
-                    onPress={handleSubmit}
+                    disabled={guardando}
+                    onPress={() => void handleSubmit()}
                 >
                     <ThemedText style={styles.btnSubmitText}>
-                        Confirmar y Finalizar Venta
+                        {guardando ? "Guardando..." : "Confirmar y Finalizar Venta"}
                     </ThemedText>
                 </TouchableOpacity>
+                {errorEnvio && (
+                    <ThemedText style={{ color: colors.textSecondary }}>
+                        {errorEnvio}
+                    </ThemedText>
+                )}
             </View>
         </ThemedView>
     );
