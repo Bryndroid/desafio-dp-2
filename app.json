@@ -11,6 +11,7 @@
       "icon": "./assets/expo.icon"
     },
     "android": {
+      "package": "com.victor.desafiodos",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -26,6 +27,13 @@
     "plugins": [
       "expo-router",
       [
+        "expo-notifications",
+        {
+          "color": "#208AEF",
+          "defaultChannel": "compras-boletos"
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#208AEF",
@@ -37,6 +45,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ffefd194-f825-498c-8b05-7a51c609316d"
+      }
     }
   }
 }

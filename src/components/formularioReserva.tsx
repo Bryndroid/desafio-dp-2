@@ -1,5 +1,6 @@
 import { useAppDispatch, useAppSelector } from "@/redux/hook";
 import { cargarReservas, guardarReserva } from "@/redux/thunk/reservas";
+import { notificarCompra } from "@/services/notificaciones";
 import { useState } from "react";
 import { StyleSheet, TextInput, TouchableOpacity, useColorScheme, View } from "react-native";
 import { Pelicula } from "../types/Peliculas";
@@ -70,6 +71,7 @@ export default function FormularioReserva({ asientosID, pelicula, onSubmit, onCo
                 fechaFuncion,
                 asientos: asientosID,
             })).unwrap();
+            await notificarCompra(reserva, pelicula.nombre);
             onSubmit(reserva.Id);
         } catch (error) {
             const failure = error && typeof error === "object" && "message" in error
